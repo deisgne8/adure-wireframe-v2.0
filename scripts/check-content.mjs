@@ -1,35 +1,61 @@
 import assert from 'node:assert/strict';
 import {existsSync, readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
-import {site, journeys, management, collections, matchCollections, portfolio, transition, clients} from '../dist/content.js';
 
-const base = {intent:'buy',location:'any',type:'any'};
-const search = changes => matchCollections({...base,...changes});
-assert.equal(search({}).length,3);
-assert.deepEqual(search({intent:'rent',location:'Dubai',type:'Apartment'}).map(x=>x.id),['city']);
-assert.equal(search({type:'Office'}).length,0);
-assert.equal(search({location:'Dubai',type:'Villa'}).length,0);
-assert.deepEqual(search({location:'Al Ain',type:'Villa'}).map(x=>x.id),['space']);
-assert.equal(Object.keys(journeys).length,4);
-assert.equal(management.length,3);
-assert.equal(transition.length,4);
-assert.equal(transition.at(-1).next,null);
-assert.equal(clients.filter(x=>x.approved).length,0);
-assert.equal(site.email,'Inquiries@adu-re.com');
-for(const item of [...Object.values(journeys),...management,...collections,...portfolio]){
-  assert.ok(item.alt?.length>10,'Meaningful alternative text');
-  for(const suffix of ['.webp','-small.webp'])assert.ok(existsSync(fileURLToPath(new URL('../dist/assets/'+item.image+suffix,import.meta.url))),item.image+suffix);
+const distUrl = new URL('../dist/index.html', import.meta.url);
+const wireframeUrl = new URL('../wireframe/index.html', import.meta.url);
+const html = readFileSync(distUrl, 'utf8');
+const wireframe = readFileSync(wireframeUrl, 'utf8');
+
+assert.equal(html, wireframe, 'Published dist must match the approved wireframe');
+
+const pageIds = [...html.matchAll(/<section class="page[^"]*" id="([^"]+)"/g)].map(match => match[1]);
+assert.deepEqual(pageIds, [
+  'home',
+  'properties',
+  'property-detail',
+  'about',
+  'customers',
+  'services',
+  'projects',
+  'project-detail',
+  'contact',
+  'portfolio',
+  'list-property',
+  'media',
+  'careers',
+]);
+assert.equal(new Set(pageIds).size, pageIds.length, 'Page IDs must be unique');
+
+const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
+assert.equal(new Set(ids).size, ids.length, 'All static IDs must be unique');
+
+for (const match of html.matchAll(/data-route="([^"]+)"/g)) {
+  assert.ok(pageIds.includes(match[1]), `Missing route target: ${match[1]}`);
 }
-const html=readFileSync(new URL('../dist/index.html',import.meta.url),'utf8');
-assert.equal((html.match(/<section\b/g)||[]).length,9);
-assert.equal((html.match(/<h1\b/g)||[]).length,1);
-const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
-assert.equal(new Set(ids).size,ids.length,'No duplicate static IDs');
-for(const match of html.matchAll(/href="#([^"]+)"/g))assert.ok(ids.includes(match[1]),'Anchor destination '+match[1]);
-for(const match of html.matchAll(/(?:src|href|poster)="((?:assets\/|styles\.css|(?:app|intro|hero-video)\.js)[^"]*)"/g)){
-  assert.ok(existsSync(new URL('../dist/'+match[1],import.meta.url)),match[1]);
+
+for (const match of html.matchAll(/(?:src|href)="(assets\/[^"]+)"/g)) {
+  assert.ok(existsSync(fileURLToPath(new URL(`../dist/${match[1]}`, import.meta.url))), match[1]);
 }
-assert.equal((html.match(/<video\b/g)||[]).length,1,'One continuous intro/hero player');
-assert.ok(html.includes('muted loop playsinline'),'Muted inline looping video');
-assert.ok(html.includes('src="assets/adure-banner.mp4"'),'User-supplied banner video');
-console.log('Content checks passed: focused filters, routes, data dimensions, asset references, image descriptions, nine chapters and unique IDs.');
+
+const approvedCopy = [
+  'Creating Value Beyond Property',
+  'A Longer View.',
+  'With You Across Every Stage.',
+  'Bring your asset under one connected management approach',
+  'Find Your Next Property.',
+  'Your Asset, Looked After As A Whole.',
+  'A Record That Speaks For Itself.',
+  'A Portfolio That Reflects Our Range.',
+  'A Considered Start.',
+  'Trusted Across Sectors.',
+  "We're Here For What Comes Next.",
+  'Beyond Property. Creating Value.',
+  'Inquiries@adu-re.com',
+];
+for (const copy of approvedCopy) assert.ok(html.includes(copy), `Missing approved copy: ${copy}`);
+
+assert.equal((html.match(/<section class="page active/g) || []).length, 1, 'One page must be active initially');
+assert.ok(html.includes('<section class="page active home-v2" id="home">'), 'Homepage must be the initial page');
+
+console.log('Content checks passed: dist matches the approved wireframe, all 13 routes resolve, assets exist, IDs are unique and approved homepage copy is present.');
