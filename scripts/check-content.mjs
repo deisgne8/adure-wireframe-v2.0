@@ -55,6 +55,11 @@ const approvedCopy = [
 ];
 for (const copy of approvedCopy) assert.ok(html.includes(copy), `Missing approved copy: ${copy}`);
 
+assert.doesNotMatch(html, /\brent(?:al|ing|ed|s)?\b/i, 'Use Lease or Leasing instead of Rent terminology');
+assert.ok(html.includes('id="services-dropdown"'), 'Services dropdown must be present');
+assert.ok(html.includes('aria-controls="services-menu"'), 'Services dropdown must expose its menu accessibly');
+assert.equal((html.match(/role="menuitem"/g) || []).length, 5, 'Services dropdown must include five routes');
+
 assert.equal((html.match(/<section class="page active/g) || []).length, 1, 'One page must be active initially');
 assert.ok(html.includes('<section class="page active home-v2" id="home">'), 'Homepage must be the initial page');
 
