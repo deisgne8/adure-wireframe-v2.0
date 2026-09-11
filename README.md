@@ -18,11 +18,15 @@ Then visit <http://127.0.0.1:4173/>. Do not open the HTML with a `file:` URL.
 - `dist/index.html`: chapter copy, semantic page structure, navigation and enquiry form.
 - `dist/styles.css`: brand tokens, composition, responsive layouts and motion preferences.
 - `dist/app.js`: interactive indexes, filtering, portfolio browsing and enquiry drafts.
-- `dist/assets`: supplied-image WebP derivatives, vector logo and self-hosted Fira Sans / Source Sans Pro.
+- `dist/intro.js`: the skippable opening starts with the compact text alone, squeezes the supplied video between the phrases, holds that completed lockup for 800ms, then expands it smoothly before the staggered hero reveal. Transform-only shutters reveal the player in its permanent hero position; it is never reparented or restarted. Reduced motion, deep links and history returns bypass the opening; refreshing the homepage replays it.
+- `dist/hero-video.js`: muted, inline, looping playback with a pause/play control. Reduced motion starts paused; playback also pauses outside the hero or in a hidden tab. A poster frame from the video remains available when playback is blocked.
+- `dist/assets`: supplied-image WebP derivatives, the user-supplied banner video and its poster, vector logo and self-hosted Fira Sans / Source Sans Pro.
 - `content-approvals.json`: private source conflicts and launch approvals; not part of the public output.
 - `CONCEPT.md`: creative handoff, reference translation, source decisions and verification.
 
 The asset preparation script uses the local source-extraction folder beside this project. It is optional; all runtime assets are already included.
+
+For local review, use **Replay intro** at the bottom right to start the opening when ready. This control only appears on localhost, not on hosted domains.
 
 ## Checks and boundaries
 

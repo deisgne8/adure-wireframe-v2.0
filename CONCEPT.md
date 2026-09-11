@@ -27,7 +27,7 @@ The existing [wireframe](https://deisgne8.github.io/adure-wireframe/dist/index.h
 
 ## Signature interactions
 
-1. Opening perspective: native scroll moves the photo from a close crop to a wider view over the opening's actual height. Text remains readable throughout. It ends as the editorial explanation enters. Mobile uses a smaller scale range; reduced motion uses a static close crop. Links are immediately usable by keyboard.
+1. Opening perspective: on a fresh homepage load, “Beyond property. Creating value.” appears first as a compact text-only statement on white. The supplied banner video then squeezes into the sentence, gently pushing the phrases apart, and continues directly into a full-screen expansion without stopping at thumbnail size. Only then do navigation, headline and supporting details enter in a short stagger. This requested update draws on the text/image preloader at [Olivia Harper Homes](https://oliviaharperhomes.com/), while retaining ADURE's own type and colour. On mobile, the statement begins as two closely spaced lines and the video opens vertically between them. Skip intro and Escape dismiss it; reduced motion, direct section links and history returns bypass it. A seven-second fail-safe prevents a stalled script from hiding the page. The same video player stays in its permanent hero position throughout, replacing both the previous close photograph and its wide-image crossfade.
 2. Four directions: clicking or tapping Buy / Sell / Rent / Manage updates the photograph, a short outcome statement and the destination. All labels remain visible. Arrow keys, Home/End and Tab support the index; activation is explicit. Mobile has a 2×2 index above one full-width image. Reduced motion swaps content immediately.
 3. The first 30 days: direct stage selection updates the week, task, owner benefit, evidence and next stage. No scroll lock. Mobile keeps all four stage choices in a readable 2×2 control and the evidence beneath. Arrow keys move focus; Enter/Space selects. Reduced motion removes the stage transition.
 
@@ -53,6 +53,22 @@ Management uses a smaller, calmer editorial disclosure; portfolio supports nativ
 One homepage, no new inner pages, CMS, CRM or inventory connection. Enquiries prepare a draft in the visitor's email application and can be copied; no submission or delivery is claimed. Search filters demonstration collections. Approval notes remain outside the customer-facing build. The prior wireframe is recoverable from the repository history.
 
 ## Verification
+
+Local-only opening update: verified the initial lockup, expanding image and completed hero at 1440, 1024, 768, 390 and 375px. Checked Skip via keyboard, Escape, resizing during arrival, reduced motion, direct section links, 200% text, JavaScript disabled, an intentionally blocked intro script and the contact dialog after completion. No publishing or Sites changes were made for this update.
+
+In-app preview correction: a startup WebView resize event was cancelling the opening before it became visible. The intro now ignores startup/no-change resize events and resets restored scroll while opening. Verified the full four-second sequence in the actual in-app browser. A localhost-only Replay intro control lets reviewers start it on demand; it stays hidden on hosted domains.
+
+Text-first refinement: the revised entrance lasts about five seconds, with distinct text-only, image insertion, full-screen expansion and hero-reveal stages. Verified in the existing in-app local tab: the photograph is hidden during the compact sentence, the gap opens with the thumbnail, navigation remains hidden during expansion, and the hero is usable afterward. Skip also works during insertion. The intro script URL is versioned to avoid the WebView reusing the previous animation.
+
+Video replacement: integrated the user's `Video-Project-5-Banner.mp4` into both the intro and hero. The 1920 × 1080 H.264 video retains its full 81.87-second duration and is remuxed for fast-start playback without re-encoding; the original file is unchanged. A frame from the same clip supplies the poster. One muted, looping, inline player moves from the intro to the hero without a source or timeline reset. In-app checks verified text-only pause, playing insertion/expansion, continuous playback after handoff, pause/play and Skip during insertion. Focused playback-logic checks covered reduced-motion defaults, explicit play, persistent manual pause and hidden-tab/offscreen pausing. Without JavaScript, the poster remains still. This update is local only; nothing was published.
+
+Continuous-motion refinement: removed the 300ms thumbnail hold and replaced the separately eased insertion/expansion with one 2.2-second overlapping timeline. Four transform-only white shutters replace animated clip-path masking, and the video remains in the hero DOM throughout—no reparenting, seeking or playback restart at the landing. The decoder starts warming behind the text before the opening becomes visible. In-app checks verified the clean text-only frame, continuing growth and playback through expansion, final hero reveal, and Skip restoring the full-size playing video. Existing ADURE layout, motion preferences and local-only delivery are preserved.
+
+Reference-timing refinement: after revisiting Olivia Harper Homes, the separated text-and-media lockup now holds for 800ms before fullscreen growth begins. The hold is explicit and stable—the video continues playing—while the following enlargement retains its steady motion and final ease. No other part of the intro sequence changed.
+
+Preloader typography refinement: increased only the opening statement from Fira Sans Light 300 to Regular 400 for stronger presence and readability. The hero and all subsequent typography remain unchanged.
+
+Navigation update: desktop and mobile navigation now follow the requested order—About Us, Properties, Services, Our Customers, Media Center and Contact Us. The first five items retain their existing in-page destinations; Contact Us keeps the current enquiry action on desktop and the contact-section destination on mobile.
 
 Verified in Chromium on 10 September 2026:
 

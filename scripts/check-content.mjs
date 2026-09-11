@@ -1,16 +1,15 @@
 import assert from 'node:assert/strict';
 import {existsSync, readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
-import {site, journeys, management, collections, budgets, matchCollections, portfolio, transition, clients} from '../dist/content.js';
+import {site, journeys, management, collections, matchCollections, portfolio, transition, clients} from '../dist/content.js';
 
-const base = {intent:'buy',location:'any',type:'any',beds:'any',budget:'any'};
+const base = {intent:'buy',location:'any',type:'any'};
 const search = changes => matchCollections({...base,...changes});
 assert.equal(search({}).length,3);
-assert.deepEqual(search({intent:'rent',location:'Dubai',type:'Apartment',beds:'2',budget:'under-100k'}).map(x=>x.id),['city']);
+assert.deepEqual(search({intent:'rent',location:'Dubai',type:'Apartment'}).map(x=>x.id),['city']);
 assert.equal(search({type:'Office'}).length,0);
 assert.equal(search({location:'Dubai',type:'Villa'}).length,0);
-assert.deepEqual(search({beds:'4-plus'}).map(x=>x.id),['space']);
-assert.equal(search({location:'Al Ain',budget:'under-1m'}).length,0);
+assert.deepEqual(search({location:'Al Ain',type:'Villa'}).map(x=>x.id),['space']);
 assert.equal(Object.keys(journeys).length,4);
 assert.equal(management.length,3);
 assert.equal(transition.length,4);
@@ -21,16 +20,16 @@ for(const item of [...Object.values(journeys),...management,...collections,...po
   assert.ok(item.alt?.length>10,'Meaningful alternative text');
   for(const suffix of ['.webp','-small.webp'])assert.ok(existsSync(fileURLToPath(new URL('../dist/assets/'+item.image+suffix,import.meta.url))),item.image+suffix);
 }
-for(const intent of ['buy','rent'])for(const collection of collections){
-  for(const value of collection[intent])assert.ok(budgets[intent].some(option=>option[0]===value));
-}
 const html=readFileSync(new URL('../dist/index.html',import.meta.url),'utf8');
-assert.equal((html.match(/<section\b/g)||[]).length,10);
+assert.equal((html.match(/<section\b/g)||[]).length,9);
 assert.equal((html.match(/<h1\b/g)||[]).length,1);
 const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);
 assert.equal(new Set(ids).size,ids.length,'No duplicate static IDs');
 for(const match of html.matchAll(/href="#([^"]+)"/g))assert.ok(ids.includes(match[1]),'Anchor destination '+match[1]);
-for(const match of html.matchAll(/(?:src|href)="((?:assets\/|styles\.css|app\.js)[^"]*)"/g)){
+for(const match of html.matchAll(/(?:src|href|poster)="((?:assets\/|styles\.css|(?:app|intro|hero-video)\.js)[^"]*)"/g)){
   assert.ok(existsSync(new URL('../dist/'+match[1],import.meta.url)),match[1]);
 }
-console.log('Content checks passed: all filters, routes, data dimensions, asset references, image descriptions, ten chapters and unique IDs.');
+assert.equal((html.match(/<video\b/g)||[]).length,1,'One continuous intro/hero player');
+assert.ok(html.includes('muted loop playsinline'),'Muted inline looping video');
+assert.ok(html.includes('src="assets/adure-banner.mp4"'),'User-supplied banner video');
+console.log('Content checks passed: focused filters, routes, data dimensions, asset references, image descriptions, nine chapters and unique IDs.');

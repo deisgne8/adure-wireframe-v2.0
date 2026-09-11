@@ -1,4 +1,4 @@
-import {site, journeys, management, collections, budgets, matchCollections, portfolio, transition, clients} from './content.js';
+import {site, journeys, management, collections, matchCollections, portfolio, transition, clients} from './content.js';
 
 const $ = (selector, parent=document) => parent.querySelector(selector);
 const $$ = (selector, parent=document) => [...parent.querySelectorAll(selector)];
@@ -8,6 +8,17 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 const escape = value => String(value).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let galleryIndex=0, stageIndex=0, searchEpoch=0, selectedJourney='buy';
 const imageRequests=new WeakMap();
+let revealObserver=null;
+
+// Carry the hero's measured, directional motion into the editorial chapters.
+// Content remains fully visible without JavaScript and for reduced-motion users.
+const revealTargets=$$('.section-pad .chapter, .perspective-layout, .value-pillars, .journey-heading, .journey-composition, .discovery-heading, .search-form, .results-toolbar, .discovery-results, .management-layout, .proof-composition, .proof-metrics, .proof-foot, .proof-trust, .portfolio-heading, .portfolio-feature, .portfolio-rail-head, .portfolio-rail, .transition-heading, .transition-layout, .closing-content, .closing-signoff');
+if(!reduced.matches&&'IntersectionObserver'in window){
+  revealTargets.forEach((element,index)=>{element.dataset.reveal=element.matches('.journey-composition,.management-layout,.portfolio-feature,.closing-content')?'masked':'line';element.style.setProperty('--reveal-delay',(index%2)*70+'ms');});
+  document.documentElement.classList.add('motion-ready');
+  revealObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('is-visible');revealObserver.unobserve(entry.target);}}),{rootMargin:'0px 0px -9% 0px',threshold:.08});
+  revealTargets.forEach(element=>revealObserver.observe(element));
+}
 
 function animateChange(element, duration=350) {
   if(reduced.matches || !element.animate) return;
@@ -25,6 +36,16 @@ async function changePicture(element, name, alt, animated=true) {
 }
 
 const menuButton=$('.menu-toggle'), menu=$('#mobile-menu'), header=$('#site-header');
+let headerFrame=0;
+function paintHeader(){
+  headerFrame=0;
+  const trigger=innerWidth<=800?116:140;
+  header.classList.toggle('is-sticky',$('#perspective').getBoundingClientRect().top<=trigger);
+}
+function queueHeader(){if(!headerFrame)headerFrame=requestAnimationFrame(paintHeader);}
+on(window,'scroll',queueHeader,{passive:true});
+on(window,'resize',queueHeader);
+paintHeader();
 function closeMenu(returnFocus=false){
   menu.hidden=true;menuButton.setAttribute('aria-expanded','false');menuButton.setAttribute('aria-label','Open navigation');
   header.classList.remove('menu-open');document.body.classList.remove('locked');
@@ -72,28 +93,35 @@ on($('#journey-cta'),'click',e=>{
   if(selectedJourney==='buy'||selectedJourney==='rent'){setIntent(selectedJourney);runSearch();}
   else if(selectedJourney==='sell'){e.preventDefault();openEnquiry('sell');}
 });
+$$('[data-nav-intent]').forEach(link=>on(link,'click',()=>{setIntent(link.dataset.navIntent);runSearch();}));
 
-// Useful local search with explicit demonstration states.
+// A concise, conversation-led property direction finder.
 const searchForm=$('#property-search'),results=$('#collection-results'),searchSubmit=$('.search-submit');
 const currentIntent=()=>new FormData(searchForm).get('intent');
+const budgetOptions={
+  buy:[['any','Any price'],['under-1m','Under AED 1M'],['1m-3m','AED 1M–3M'],['3m-plus','AED 3M+']],
+  rent:[['any','Any annual rent'],['under-100k','Under AED 100K'],['100k-200k','AED 100K–200K'],['200k-plus','AED 200K+']],
+};
 function setIntent(intent){
   if(!['buy','rent'].includes(intent))return;
   $('input[name=intent][value='+intent+']',searchForm).checked=true;
-  $('#search-budget').innerHTML=budgets[intent].map(([value,label])=>'<option value="'+value+'">'+escape(label)+'</option>').join('');
+  const budget=$('#search-budget'),current=budget.value;
+  budget.innerHTML=budgetOptions[intent].map(([value,label])=>'<option value="'+value+'">'+label+'</option>').join('');
+  if(budgetOptions[intent].some(([value])=>value===current))budget.value=current;
 }
 function searchFilters(){const data=Object.fromEntries(new FormData(searchForm));return {intent:data.intent,location:data.location,type:data.type,beds:data.beds,budget:data.budget};}
 function renderCollections(items, intent){
-  results.innerHTML=items.map(item=>'<article class="collection-card"><button type="button" class="collection-image" data-collection="'+item.id+'" aria-label="Discuss the '+escape(item.name)+' demonstration collection"><img src="assets/'+item.image+'.webp" srcset="assets/'+item.image+'-small.webp 600w, assets/'+item.image+'.webp 900w" sizes="(max-width:600px) 85vw, 36vw" alt="'+escape(item.alt)+'" width="900" height="488" loading="lazy"><span class="sample-label">Sample collection</span></button><div class="collection-body"><p class="collection-meta">'+escape(item.location)+' · Example search</p><h3>'+escape(item.name)+'</h3><div class="collection-bottom"><span>'+escape(item.type)+'</span><button type="button" data-collection="'+item.id+'">Discuss this search <span aria-hidden="true">↗</span></button></div></div></article>').join('');
+  results.innerHTML=items.map(item=>'<article class="collection-card"><button type="button" class="collection-image" data-collection="'+item.id+'" aria-label="Enquire about '+escape(item.name)+'"><img src="assets/'+item.image+'.webp" srcset="assets/'+item.image+'-small.webp 600w, assets/'+item.image+'.webp 900w" sizes="(max-width:600px) 85vw, 36vw" alt="'+escape(item.alt)+'" width="900" height="488" loading="lazy"></button><div class="collection-body"><p class="collection-meta">'+escape(item.location)+' · '+escape(item.type)+'</p><h3>'+escape(item.name)+'</h3><div class="collection-bottom"><button type="button" data-collection="'+item.id+'">Enquire now <span aria-hidden="true">↗</span></button></div></div></article>').join('');
   $('#search-empty').hidden=items.length>0;
   results.hidden=items.length===0;
   $('#search-empty [data-enquiry]').dataset.enquiry=intent;
-  $('#search-status').textContent=items.length+' demonstration '+(items.length===1?'collection':'collections')+' · '+(intent==='buy'?'Buy':'Rent');
+  $('#search-status').textContent=items.length+' '+(items.length===1?'property':'properties')+' for '+(intent==='buy'?'buying':'renting');
   results.scrollLeft=0;
 }
 async function runSearch(){
   const epoch=++searchEpoch,filters=searchFilters();
   searchSubmit.disabled=true;searchSubmit.setAttribute('aria-busy','true');results.setAttribute('aria-busy','true');
-  $('#search-status').textContent='Filtering demonstration collections…';
+  $('#search-status').textContent='Searching properties…';
   await new Promise(resolve=>setTimeout(resolve,reduced.matches?0:180));
   if(epoch!==searchEpoch)return;
   renderCollections(matchCollections(filters),filters.intent);
@@ -153,7 +181,7 @@ function selectStage(index){
   stageIndex=index;const data=transition[index];
   $$('[data-stage]').forEach((button,i)=>{button.setAttribute('aria-selected',String(i===index));button.tabIndex=i===index?0:-1;});
   $('#stage-panel').setAttribute('aria-labelledby','stage-tab-'+index);
-  $('#stage-week').textContent=data.week+' / '+['The starting point','The fuller picture','A coordinated handover','Ongoing value'][index];
+  $('#stage-week').textContent=data.week+' / 30-day transition';
   $('#stage-number').textContent='0'+(index+1);$('#stage-count').textContent='0'+(index+1)+' / 04';
   $('#stage-title').textContent=data.title+'.';$('#stage-body').textContent=data.body;$('#stage-gain').textContent=data.gain;
   $('#stage-evidence').innerHTML=data.evidence.map(item=>'<li>'+escape(item)+'</li>').join('');
@@ -175,7 +203,7 @@ function openEnquiry(intent='general',collection=null){
   closeMenu();
   $('#enquiry-interest').value=intent;$('#enquiry-heading').textContent=enquiryNames[intent];
   $('#enquiry-draft').hidden=true;enquiryForm.hidden=false;$('#draft-status').textContent='';
-  if(collection)enquiryForm.elements.message.value='I would like to discuss '+(intent==='rent'?'renting':'buying')+' options similar to the “'+collection.name+'” demonstration collection. My preferred location is '+collection.location+'.';
+  if(collection)enquiryForm.elements.message.value='I would like to discuss '+(intent==='rent'?'renting':'buying')+' options aligned with “'+collection.name+'”. My preferred location is '+collection.location+'.';
   if(!enquiryDialog.open)enquiryDialog.showModal();
 }
 on($('#enquiry-interest'),'change',e=>$('#enquiry-heading').textContent=enquiryNames[e.target.value]);
@@ -221,18 +249,27 @@ on($('#copy-draft'),'click',async()=>{
 $$('[data-email]').forEach(el=>{el.textContent=site.email;el.href='mailto:'+site.email;});
 $$('[data-year]').forEach(el=>el.textContent=site.year);
 
-// One scroll-linked change, bounded by the opening itself. The page keeps native scroll.
+// The hero borrows the reference's sticky scroll runway: the editorial groups
+// separate horizontally while the film moves with a restrained parallax.
 let frame=0,heroVisible=true;
 function paintHero(){
   frame=0;const hero=$('#home'),rect=hero.getBoundingClientRect();
-  const p=reduced.matches?0:Math.max(0,Math.min(1,-rect.top/(rect.height*.65)));
-  const scale=reduced.matches?1:1+(innerWidth<=600?.07:.14)*(1-p);
-  hero.style.setProperty('--hero-progress',p.toFixed(3));hero.style.setProperty('--hero-scale',scale.toFixed(3));
+  const runway=Math.max(1,rect.height-innerHeight);
+  const raw=reduced.matches?0:Math.max(0,Math.min(1,-rect.top/runway));
+  const p=1-Math.pow(1-raw,1.15);
+  const travel=Math.min(innerWidth*(innerWidth<=600?1.05:1.12),1560)*p;
+  const parallax=-Math.min(innerHeight*.045,42)*p;
+  const scale=1.035+.025*p;
+  hero.style.setProperty('--hero-progress',p.toFixed(3));
+  hero.style.setProperty('--hero-left-x',(-travel).toFixed(1)+'px');
+  hero.style.setProperty('--hero-right-x',travel.toFixed(1)+'px');
+  hero.style.setProperty('--hero-parallax-y',parallax.toFixed(1)+'px');
+  hero.style.setProperty('--hero-video-scale',scale.toFixed(4));
 }
 function queueHero(){if(!frame&&heroVisible)frame=requestAnimationFrame(paintHero);}
 const observer=new IntersectionObserver(entries=>{heroVisible=entries[0].isIntersecting;if(heroVisible)queueHero();});
 observer.observe($('#home'));
 on(window,'scroll',queueHero,{passive:true});on(window,'resize',queueHero);
 on(reduced,'change',()=>{paintHero();});
-on(window,'pagehide',event=>{if(event.persisted)return;lifecycle.abort();observer.disconnect();cancelAnimationFrame(frame);searchEpoch++;});
+on(window,'pagehide',event=>{if(event.persisted)return;lifecycle.abort();observer.disconnect();revealObserver?.disconnect();cancelAnimationFrame(frame);cancelAnimationFrame(headerFrame);searchEpoch++;});
 paintHero();requestAnimationFrame(updateRail);
