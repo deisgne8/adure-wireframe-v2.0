@@ -40,21 +40,28 @@ for (const match of html.matchAll(/(?:src|href)="(assets\/[^"]+)"/g)) {
 
 const approvedCopy = [
   'Creating Value Beyond Property',
-  'A Longer View.',
   'With You Across Every Stage.',
-  'Bring your asset under one connected management approach',
   'Find Your Next Property.',
-  'Your Asset, Looked After As A Whole.',
+  'One connected approach for your asset',
   'A Record That Speaks For Itself.',
   'A Portfolio That Reflects Our Range.',
   'A Considered Start.',
   'Trusted Across Sectors.',
-  "We're Here For What Comes Next.",
+  'We’re Here For What Comes Next.',
+  'List Your Property',
+  'Manage Your Property',
+  'General Enquiry',
   'Beyond Property. Creating Value.',
   'Inquiries@adu-re.com',
 ];
 for (const copy of approvedCopy) assert.ok(html.includes(copy), `Missing approved copy: ${copy}`);
 
+assert.ok(!html.includes('A Longer View.'), 'Removed homepage philosophy section must not return');
+assert.deepEqual(
+  [...html.slice(html.indexOf('id="home"'), html.indexOf('id="properties"')).matchAll(/section-index">(\d+)/g)].map(match => match[1]),
+  ['02', '04', '05', '06', '07', '08', '09'],
+  'Homepage sitemap section numbering must follow the revised content document',
+);
 assert.doesNotMatch(html, /\brent(?:al|ing|ed|s)?\b/i, 'Use Lease or Leasing instead of Rent terminology');
 assert.ok(html.includes('id="services-dropdown"'), 'Services dropdown must be present');
 assert.ok(html.includes('aria-controls="services-menu"'), 'Services dropdown must expose its menu accessibly');
@@ -63,4 +70,4 @@ assert.equal((html.match(/role="menuitem"/g) || []).length, 5, 'Services dropdow
 assert.equal((html.match(/<section class="page active/g) || []).length, 1, 'One page must be active initially');
 assert.ok(html.includes('<section class="page active home-v2" id="home">'), 'Homepage must be the initial page');
 
-console.log('Content checks passed: dist matches the approved wireframe, all 13 routes resolve, assets exist, IDs are unique and approved homepage copy is present.');
+console.log('Content checks passed: dist matches the approved wireframe, all 13 routes resolve, assets exist, IDs are unique and the revised homepage sitemap copy is present.');
